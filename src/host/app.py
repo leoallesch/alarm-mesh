@@ -88,17 +88,17 @@ def update_display():
     """Update LCD display every minute with current time and alarm status"""
     while host and host.running:
         try:
-            current_time = datetime.datetime.now()
+            current_time = datetime.now()
             alarm = alarm_manager.get_current_alarm()
-            
+
             # Create a TimeDisplay object with current time and alarm
             display = TimeDisplay(current_time=current_time, alarm=alarm)
-            
+
             if lcd:
                 lcd.write(display.get_time_line(), display.get_alarm_line())
-            
+
             print(f"[HOST] Display updated: {display}")
-            
+
             # Update every minute (60 seconds)
             time.sleep(60)
         except Exception as e:
@@ -118,7 +118,7 @@ def alarm_scheduler():
         if not alarm:
             continue  # Skip if no alarm set
         
-        current_time = datetime.datetime.now()
+        current_time = datetime.now()
         hour_24, minute = alarm.get_24hr_time()
         alarm_time = current_time.replace(
             hour=hour_24,
@@ -137,6 +137,17 @@ def main():
     host = AlarmHost(port=5001, event_handler=handle_event)
     alarm_manager = AlarmManager(event_callback=host.broadcast)
     
+    # Start Flask web server in a background thread so the form works
+    try:
+        flask_thread = threading.Thread(
+            target=lambda: app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False),
+            daemon=True,
+        )
+        flask_thread.start()
+        print("[HOST APP] Flask webserver started on port 5000")
+    except Exception as e:
+        print(f"[HOST APP] Failed to start Flask webserver: {e}")
+
     # Initialize LCD and Buzzer
     try:
         lcd = LCD()
