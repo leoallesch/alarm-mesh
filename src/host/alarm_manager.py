@@ -48,11 +48,20 @@ class AlarmManager:
         print(f"[ALARM] Snooze pressed by {addr}")
         with self.lock:
             self.snooze_responses.add(addr)
-            # Check if all nodes have sent snooze
-            if len(self.snooze_responses) >= connected_nodes_count:
-                print(f"[ALARM] All nodes have snoozed. Alarm cleared.")
+            # Check if all nodes + host have sent snooze (addr=None for host)
+            if len(self.snooze_responses) > connected_nodes_count:
+                print(f"[ALARM] All nodes and host have snoozed. Alarm cleared.")
                 self._clear_alarm()
 
+    def handle_host_snooze(self):
+        """Handle snooze button press on the host"""
+        print(f"[ALARM] Host snooze button pressed")
+        with self.lock:
+            if not self.alarm_active:
+                print("[ALARM] Alarm not active, ignoring snooze")
+                return
+            self.snooze_responses.add("host")
+    
     def _clear_alarm(self):
         """Clear the active alarm (must be called with lock held)"""
         self.alarm_active = False

@@ -1,8 +1,59 @@
 from common.comms.node_client import AlarmNode
 from common.comms.protocol import AlarmEvent, EventType, Alarm
+from common.io.button import SnoozeButton
 import time
+import threading
+
+node = None
+button = None
+
+def handle_events():
+    """Handle incoming events from the host"""
+    buffer = ""
+    while node and node.connected:
+        try:
+            data = node.socket.recv(4096).decode()
+            if not data:
+                break
+            buffer += data
+            
+            # Messages separated by newline
+            while "\n" in buffer:
+                packet, buffer = buffer.split("\n", 1)
+                event = AlarmEvent.from_json(packet)
+                print(f"[NODE] Received: {event.type.name}")
+                
+                if event.type == EventType.ALARM_TRIGGERED:
+                    node.alarm_triggered = True
+                    print("[NODE] ALARM TRIGGERED!")
+                elif event.type == EventType.ALARM_CLEARED:
+                    node.alarm_triggered = False
+                    print("[NODE] Alarm cleared")
+        except Exception as e:
+            print(f"[NODE] Error receiving events: {e}")
+            break
+
+
+def button_monitor():
+    """Monitor button presses while alarm is triggered"""
+    while node:
+        try:
+            if node.is_alarm_triggered() and button:
+                if button.is_pressed():
+                    print("[NODE] Snooze button pressed!")
+                    # Send snooze event to host
+                    snooze_event = AlarmEvent(EventType.SNOOZE_PRESSED, {"node": "client"})
+                    node.send(snooze_event)
+                    # Debounce: wait for release
+                    time.sleep(0.5)
+            time.sleep(0.05)  # Poll every 50ms
+        except Exception as e:
+            print(f"[NODE] Error in button monitor: {e}")
+            time.sleep(0.05)
+
 
 def main():
+    global node, button
     node = AlarmNode()
     node.start_discovery()  # Zeroconf discovery
 
@@ -18,9 +69,24 @@ def main():
     hb = AlarmEvent(EventType.HEARTBEAT, {"node_id": "demo"})
     node.send(hb)
 
+    # Initialize button
+    try:
+        button = SnoozeButton(button_pin=27)
+        print("[NODE APP] Button initialized")
+    except Exception as e:
+        print(f"[NODE APP] Failed to initialize button: {e}")
+
+    # Start event handler thread
+    event_thread = threading.Thread(target=handle_events, daemon=True)
+    event_thread.start()
+
+    # Start button monitor thread
+    button_thread = threading.Thread(target=button_monitor, daemon=True)
+    button_thread.start()
+
     try:
         while True:
-            time.sleep(10)  # Send heartbeat every 30 seconds instead of every 1 second
+            time.sleep(10)  # Send heartbeat every 30 seconds
 
             # Send a heartbeat
             hb = AlarmEvent(EventType.HEARTBEAT)
@@ -28,6 +94,8 @@ def main():
 
     except KeyboardInterrupt:
         print("[NODE APP] Shutting down")
+        if button:
+            button.close()
         node.stop()
 
 if __name__ == "__main__":

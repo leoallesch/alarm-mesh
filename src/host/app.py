@@ -5,6 +5,7 @@ from common.comms.protocol import Alarm, AlarmEvent, EventType
 from common.io.lcd import LCD
 from common.io.time_display import TimeDisplay
 from common.io.buzzer import BuzzerController
+from common.io.button import SnoozeButton
 import time
 import threading
 import datetime
@@ -14,6 +15,7 @@ host = None
 alarm_manager = None
 lcd = None
 buzzer = None
+button = None
 
 @app.route("/")
 def home():
@@ -24,6 +26,22 @@ def handle_event(event: AlarmEvent, addr):
     """Handle received events from nodes"""
     if event.type == EventType.SNOOZE_PRESSED:
         alarm_manager.handle_snooze(addr, host.get_connected_nodes_count())
+
+
+def button_monitor():
+    """Monitor button presses while alarm is active"""
+    while host and host.running:
+        try:
+            if alarm_manager.is_alarm_active() and button:
+                if button.is_pressed():
+                    print("[HOST] Snooze button pressed")
+                    alarm_manager.handle_host_snooze()
+                    # Debounce: wait for release
+                    time.sleep(0.5)
+            time.sleep(0.05)  # Poll every 50ms
+        except Exception as e:
+            print(f"[HOST] Error in button monitor: {e}")
+            time.sleep(0.05)
 
 
 def update_display():
@@ -75,7 +93,7 @@ def alarm_scheduler():
 
 
 def main():
-    global host, alarm_manager, lcd, buzzer
+    global host, alarm_manager, lcd, buzzer, button
     host = AlarmHost(port=5001, event_handler=handle_event)
     alarm_manager = AlarmManager(event_callback=host.broadcast)
     
@@ -91,6 +109,13 @@ def main():
         print("[HOST APP] Buzzer initialized")
     except Exception as e:
         print(f"[HOST APP] Failed to initialize Buzzer: {e}")
+    
+    # Initialize button
+    try:
+        button = SnoozeButton(button_pin=27)  # Adjust pin as needed
+        print("[HOST APP] Button initialized")
+    except Exception as e:
+        print(f"[HOST APP] Failed to initialize Button: {e}")
     
     host.start()
 
@@ -109,6 +134,10 @@ def main():
     display_thread = threading.Thread(target=update_display, daemon=True)
     display_thread.start()
 
+    # Start the button monitor thread
+    button_thread = threading.Thread(target=button_monitor, daemon=True)
+    button_thread.start()
+
     # Keep alive forever
     try:
         while True:
@@ -119,6 +148,8 @@ def main():
             lcd.close()
         if buzzer:
             buzzer.turn_off()
+        if button:
+            button.close()
         host.stop()
 
 if __name__ == "__main__":
