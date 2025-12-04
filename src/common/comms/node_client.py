@@ -1,4 +1,4 @@
-from zeroconf import ServiceBrowser, ServiceStateChange
+from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 
 class AlarmNode:
     def __init__(self):
