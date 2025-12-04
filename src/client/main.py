@@ -93,14 +93,14 @@ def main():
 
     # Initialize button
     try:
-        button = SnoozeButton(button_pin=23)
+        button = SnoozeButton(button_pin=4)
         print("[NODE APP] Button initialized")
     except Exception as e:
         print(f"[NODE APP] Failed to initialize button: {e}")
 
     # Initialize LED
     try:
-        led = LedController(pin=24)  # adjust pin as needed
+        led = LedController(pin=5)  # adjust pin as needed
         print("[NODE APP] LED initialized")
     except Exception as e:
         print(f"[NODE APP] Failed to initialize LED: {e}")
