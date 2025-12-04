@@ -19,7 +19,6 @@ class LCD:
             line1: String for line 1 (max 16 chars)
             line2: String for line 2 (max 16 chars), optional
         """
-        # Ensure strings are exactly 16 characters to clear previous content
         line1 = str(line1)[:16].ljust(16)
         line2 = str(line2)[:16].ljust(16)
         

@@ -24,6 +24,12 @@ class AlarmManager:
         with self.lock:
             self.current_alarm = alarm
         print(f"[ALARM] Alarm scheduled for {alarm}")
+        # Broadcast alarm set to nodes so they can update indicators
+        try:
+            event = AlarmEvent(EventType.ALARM_SET, {"alarm": alarm.to_dict()})
+            self.event_callback(event)
+        except Exception as e:
+            print(f"[ALARM] Failed to broadcast ALARM_SET: {e}")
 
     def trigger_alarm(self, alarm: Alarm):
         """Trigger an alarm and broadcast to all nodes"""

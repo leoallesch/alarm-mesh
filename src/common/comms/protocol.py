@@ -5,6 +5,7 @@ from enum import Enum, auto
 from typing import Any
 
 class EventType(Enum):
+    ALARM_SET = auto()
     ALARM_TRIGGERED = auto()
     ALARM_CLEARED = auto()
     HEARTBEAT = auto()

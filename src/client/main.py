@@ -1,11 +1,13 @@
 from common.comms.node_client import AlarmNode
 from common.comms.protocol import AlarmEvent, EventType, Alarm
 from common.io.button import SnoozeButton
+from common.io.led import LedController
 import time
 import threading
 
 node = None
 button = None
+led = None
 
 def handle_events():
     """Handle incoming events from the host"""
@@ -23,12 +25,32 @@ def handle_events():
                 event = AlarmEvent.from_json(packet)
                 print(f"[NODE] Received: {event.type.name}")
                 
-                if event.type == EventType.ALARM_TRIGGERED:
+                if event.type == EventType.ALARM_SET:
+                    # Alarm scheduled: steady LED on
+                    print("[NODE] Alarm set received")
+                    try:
+                        if led:
+                            led.on()
+                    except Exception:
+                        pass
+                elif event.type == EventType.ALARM_TRIGGERED:
                     node.alarm_triggered = True
                     print("[NODE] ALARM TRIGGERED!")
+                    # Start blinking LED
+                    try:
+                        if led:
+                            led.blink()
+                    except Exception:
+                        pass
                 elif event.type == EventType.ALARM_CLEARED:
                     node.alarm_triggered = False
                     print("[NODE] Alarm cleared")
+                    # Turn off LED
+                    try:
+                        if led:
+                            led.off()
+                    except Exception:
+                        pass
         except Exception as e:
             print(f"[NODE] Error receiving events: {e}")
             break
@@ -71,10 +93,17 @@ def main():
 
     # Initialize button
     try:
-        button = SnoozeButton(button_pin=27)
+        button = SnoozeButton(button_pin=23)
         print("[NODE APP] Button initialized")
     except Exception as e:
         print(f"[NODE APP] Failed to initialize button: {e}")
+
+    # Initialize LED
+    try:
+        led = LedController(pin=24)  # adjust pin as needed
+        print("[NODE APP] LED initialized")
+    except Exception as e:
+        print(f"[NODE APP] Failed to initialize LED: {e}")
 
     # Start event handler thread
     event_thread = threading.Thread(target=handle_events, daemon=True)
@@ -96,6 +125,8 @@ def main():
         print("[NODE APP] Shutting down")
         if button:
             button.close()
+        if led:
+            led.close()
         node.stop()
 
 if __name__ == "__main__":
