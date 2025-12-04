@@ -1,4 +1,4 @@
-from gpiozero import LED
+import RPi.GPIO as GPIO
 import threading
 import time
 
@@ -6,17 +6,18 @@ class LedController:
     """Simple LED controller with steady on/off and blink support."""
 
     def __init__(self, pin):
-        self.led = LED(pin)
+        GPIO.setup(pin, GPIO.OUT)
+        self.pin = pin
         self._blinking = False
         self._blink_thread = None
 
     def on(self):
         self.stop_blink()
-        self.led.on()
+        GPIO.output(self.pin, True)
 
     def off(self):
         self.stop_blink()
-        self.led.off()
+        GPIO.output(self.pin, False)
 
     def blink(self, on_time=0.5, off_time=0.5):
         """Start blinking in a background thread."""
