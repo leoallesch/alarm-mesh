@@ -19,9 +19,9 @@ class LCD:
             line1: String for line 1 (max 16 chars)
             line2: String for line 2 (max 16 chars), optional
         """
-        # Truncate to fit 16 character width
-        line1 = str(line1)[:16]
-        line2 = str(line2)[:16]
+        # Ensure strings are exactly 16 characters to clear previous content
+        line1 = str(line1)[:16].ljust(16)
+        line2 = str(line2)[:16].ljust(16)
         
         self.lcd.cursor_pos = (0, 0)
         self.lcd.write_string(line1)
