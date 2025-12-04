@@ -163,7 +163,7 @@ def main():
     
     # Initialize button
     try:
-        button = SnoozeButton(button_pin=27)  # Adjust pin as needed
+        button = SnoozeButton(button_pin=10)  # Adjust pin as needed
         print("[HOST APP] Button initialized")
     except Exception as e:
         print(f"[HOST APP] Failed to initialize Button: {e}")
