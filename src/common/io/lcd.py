@@ -1,10 +1,11 @@
 
-from RPLCD.i2c import CharLCD
+from RPLCD import CharLCD
+from RPi import GPIO
 import time
 
 # Common I2C addresses: 0x27 or 0x3F
-lcd = CharLCD(i2c_expander='PCF8574', address=0x27, port=1,
-    cols=16, rows=2, charmap='A00')
+lcd = CharLCD(pin_rs=24, pin_e=23, pins_data=[22, 27, 18, 17],
+    numbering_mode=GPIO.BCM, cols=16, rows=2, dotsize=8)
 
 def lcd_write(text: str):
     lcd.clear()
