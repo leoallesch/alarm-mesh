@@ -269,11 +269,11 @@ def main():
     except Exception as e:
         print(f"[HOST APP] Failed to initialize LCD: {e}")
     
-    # try:
-    #     buzzer = BuzzerController(buzzer_pin=4)  # Adjust pin as needed
-    #     print("[HOST APP] Buzzer initialized")
-    # except Exception as e:
-    #     print(f"[HOST APP] Failed to initialize Buzzer: {e}")
+    try:
+        buzzer = BuzzerController(buzzer_pin=4)  # Adjust pin as needed
+        print("[HOST APP] Buzzer initialized")
+    except Exception as e:
+        print(f"[HOST APP] Failed to initialize Buzzer: {e}")
     
     # Initialize button
     try:
