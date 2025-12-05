@@ -10,7 +10,7 @@ class AlarmHost:
     SERVICE_NAME = "AlarmHostService._alarmhost._tcp.local."
     HEARTBEAT_TIMEOUT = 60  # Remove node if no heartbeat for 60 seconds
 
-    def __init__(self, port=5001, event_handler=None):
+    def __init__(self, port=5001, event_handler=None, on_node_connected=None):
         self.port = port
         self.zeroconf = Zeroconf()
         self.service_info = None
@@ -18,12 +18,34 @@ class AlarmHost:
         self.running = False
         self.lock = threading.Lock()
         self.event_handler = event_handler  # Callback for handling received events
+        self.on_node_connected = on_node_connected  # Callback when a node connects
 
     # ------------------------------
     # Zeroconf Service Announce
     # ------------------------------
     def start_advertising(self):
-        ip = socket.gethostbyname(socket.gethostname())
+        # Try to find a non-loopback LAN IP. socket.gethostbyname(hostname)
+        # often returns 127.0.1.1 on some systems, which makes the advertised
+        # address unreachable for other devices. Use a UDP trick to discover
+        # the primary outbound IP and fall back gracefully.
+        ip = None
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # This doesn't need to be reachable; no packets are sent.
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+        except Exception:
+            try:
+                ip = socket.gethostbyname(socket.gethostname())
+            except Exception:
+                ip = "127.0.0.1"
+        finally:
+            try:
+                if s:
+                    s.close()
+            except:
+                pass
 
         self.service_info = ServiceInfo(
             type_=self.SERVICE_TYPE,
@@ -58,13 +80,23 @@ class AlarmHost:
                         "conn": conn,
                         "last_heartbeat": time.time()
                     }
-
+                
+                # Start the client receive loop
                 threading.Thread(
                     target=self._client_recv_loop, 
                     args=(conn, addr),
                     daemon=True
                 ).start()
-            except:
+                
+                # Call the node connected callback in a separate thread to avoid blocking
+                if self.on_node_connected:
+                    threading.Thread(
+                        target=self.on_node_connected,
+                        args=(addr, conn),
+                        daemon=True
+                    ).start()
+            except Exception as e:
+                print(f"[HOST] Error in accept loop: {e}")
                 pass
 
     def _client_recv_loop(self, conn, addr):

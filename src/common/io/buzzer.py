@@ -1,47 +1,87 @@
-from gpiozero import TonalBuzzer, Buzzer
-from gpiozero.tones import Tone
-from time import sleep
+import RPi.GPIO as GPIO
+import time
+import threading
+
+# Global flag to ensure GPIO.setmode is called only once
+_GPIO_MODE_SET = False
+
+def _ensure_gpio_mode():
+    global _GPIO_MODE_SET
+    if not _GPIO_MODE_SET:
+        try:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            _GPIO_MODE_SET = True
+        except Exception:
+            pass
 
 class BuzzerController:
-    def __init__(self, buzzer_pin, tone="alarm"):
-        self.tone = tone
-
-        # Try to use TonalBuzzer for passive buzzers
-        try:
-            self.buzzer = TonalBuzzer(buzzer_pin)
-            self.tonal = True
-        except Exception:
-            # Fallback for active buzzers
-            self.buzzer = Buzzer(buzzer_pin)
-            self.tonal = False
-
+    """Buzzer controller using RPi.GPIO with PWM for passive buzzers"""
+    
+    def __init__(self, buzzer_pin, frequency=1000):
+        """
+        Initialize buzzer controller.
+        
+        Args:
+            buzzer_pin: GPIO pin number for the buzzer
+            frequency: PWM frequency in Hz (default 1000 for passive buzzer)
+        """
+        _ensure_gpio_mode()
+        self.pin = buzzer_pin
+        self.frequency = frequency
         self.is_on = False
+        self._pwm = None
+        self._beep_thread = None
+        
+        try:
+            GPIO.setup(buzzer_pin, GPIO.OUT)
+            self._pwm = GPIO.PWM(buzzer_pin, frequency)
+        except Exception as e:
+            print(f"[BUZZER] Failed to initialize PWM: {e}")
 
     def turn_on(self):
+        """Turn on the buzzer with a beeping pattern"""
+        if self.is_on:
+            return
+        
         self.is_on = True
-
-        if self.tonal:
-            # Alarm-like tone pattern for passive buzzer
-            try:
-                for freq in [440, 660, 880, 660]:
-                    self.buzzer.play(Tone(freq))
-                    sleep(0.15)
-                self.buzzer.stop()
-                return
-            except Exception:
-                pass
-
-        # Fallback for active buzzer: simple beep
-        for _ in range(3):
-            self.buzzer.on()
-            sleep(0.1)
-            self.buzzer.off()
-            sleep(0.1)
+        # Start beeping in a background thread so it doesn't block
+        self._beep_thread = threading.Thread(target=self._beep_pattern, daemon=True)
+        self._beep_thread.start()
 
     def turn_off(self):
+        """Turn off the buzzer"""
         self.is_on = False
+        try:
+            if self._pwm:
+                self._pwm.stop()
+        except Exception:
+            pass
 
-        if self.tonal:
-            self.buzzer.stop()
-        else:
-            self.buzzer.off()
+    def _beep_pattern(self):
+        """Generate a repeating beep pattern using PWM while is_on is True"""
+        if not self._pwm:
+            return
+        
+        while self.is_on:
+            try:
+                self._pwm.start(5)
+                time.sleep(0.3)  # Beep for 300ms
+                
+                if not self.is_on:
+                    break
+                
+                self._pwm.stop()
+                time.sleep(0.3)  # Silence for 300ms
+            except Exception:
+                break
+
+    def close(self):
+        """Clean up GPIO resources"""
+        self.turn_off()
+        try:
+            if self._pwm:
+                self._pwm.stop()
+            GPIO.cleanup(self.pin)
+        except Exception:
+            pass

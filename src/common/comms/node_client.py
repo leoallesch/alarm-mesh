@@ -1,7 +1,7 @@
 from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 import socket
 import json
-from common.comms.protocol import AlarmEvent
+from common.comms.protocol import AlarmEvent, EventType
 
 class AlarmNode:
     def __init__(self):
@@ -11,6 +11,8 @@ class AlarmNode:
         self.host_port = None
         self.socket = None
         self.connected = False
+        self.alarm_triggered = False  # Track if alarm is currently triggered
+        self.event_handler = None  # Callback for handling received events
         print("[NODE] Initialized")
 
     def start_discovery(self):
@@ -67,6 +69,14 @@ class AlarmNode:
         except Exception as e:
             print(f"[NODE] Failed to send event: {e}")
             self.connected = False
+
+    def set_event_handler(self, handler):
+        """Set callback for handling received events"""
+        self.event_handler = handler
+
+    def is_alarm_triggered(self) -> bool:
+        """Check if alarm is currently triggered"""
+        return self.alarm_triggered
 
     def stop(self):
         """Stop the node and close connections"""

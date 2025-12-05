@@ -1,3 +1,86 @@
+<!DOCTYPE html>
 <html>
-    <p1>This is a test</p1>
+
+<head>
+    <title>Flask App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        form {
+            border: 1px solid #ccc;
+            padding: 15px;
+            width: 300px;
+        }
+
+        input[type="submit"],
+        input[type="button"] {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        input[type="submit"]:hover,
+        input[type="button"]:hover {
+            background-color: #45a049;
+        }
+
+        .remove-btn {
+            background-color: #f44336;
+        }
+
+        .remove-btn:hover {
+            background-color: #da190b;
+        }
+
+        .current-alarm {
+            border: 2px solid #4CAF50;
+            padding: 15px;
+            margin: 15px 0;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+        }
+
+        .message {
+            color: #4CAF50;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Welcome to your Alarm Clock</h2>
+    <p>Please enter your desired time to wake up</p>
+
+    <form method="post" action="/">
+        {{form.csrf_token}}
+        <p>
+            {{form.time.label}}<br>
+            {{ form.time()}}
+        </p>
+        <p><input type="submit" value="Set Alarm"></p>
+    </form>
+
+    {% if message %}
+    <p class="message">{{ message }}</p>
+    {% endif %}
+
+    {% if current_alarm %}
+    <div class="current-alarm">
+        <h3>Current Alarm</h3>
+        <p><strong>{{ current_alarm }}</strong></p>
+        <form method="post" action="/remove" style="margin-top: 10px;">
+            <input type="submit" class="remove-btn" value="Remove Alarm">
+        </form>
+    </div>
+    {% endif %}
+</body>
+
 </html>

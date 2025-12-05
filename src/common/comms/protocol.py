@@ -5,6 +5,7 @@ from enum import Enum, auto
 from typing import Any
 
 class EventType(Enum):
+    ALARM_SET = auto()
     ALARM_TRIGGERED = auto()
     ALARM_CLEARED = auto()
     HEARTBEAT = auto()
@@ -38,11 +39,24 @@ class Alarm:
 
     def get_24hr_time(self) -> tuple[int, int]:
         """Convert 12-hour format to 24-hour format. Returns (hour_24, minutes)"""
-        hour_24 = self.hours % 12  # Convert 12 to 0
-        if self.is_pm and self.hours != 12:
-            hour_24 += 12
-        elif not self.is_pm and self.hours == 12:
-            hour_24 = 0
+        # 12:xx AM = 00:xx (midnight hour)
+        # 1-11:xx AM = 1-11:xx (morning hours)
+        # 12:xx PM = 12:xx (noon hour)
+        # 1-11:xx PM = 13-23:xx (afternoon/evening hours)
+        
+        if self.is_pm:
+            # PM times
+            if self.hours == 12:
+                hour_24 = 12  # 12 PM stays 12
+            else:
+                hour_24 = self.hours + 12  # 1-11 PM becomes 13-23
+        else:
+            # AM times
+            if self.hours == 12:
+                hour_24 = 0  # 12 AM becomes 00 (midnight)
+            else:
+                hour_24 = self.hours  # 1-11 AM stays 1-11
+        
         return hour_24, self.minutes
 
     def get_next_trigger_time(self) -> float:
@@ -68,7 +82,6 @@ class AlarmEvent:
     type: EventType
     data: dict[str, Any] = None
     timestamp: float | None = None
-    expires_at: float | None = None
 
     def __post_init__(self):
         if self.timestamp is None:
