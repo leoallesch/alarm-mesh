@@ -98,20 +98,27 @@ def on_node_connected(addr, conn):
     try:
         alarm = alarm_manager.get_current_alarm()
         if alarm:
-            # Send the current alarm to the newly connected node
-            event = AlarmEvent(EventType.ALARM_SET, {"alarm": alarm.to_dict()})
-            msg = event.to_json() + "\n"
-            conn.sendall(msg.encode())
-            print(f"[HOST APP] Sent current alarm to node {addr}")
+            try:
+                # Send the current alarm to the newly connected node
+                event = AlarmEvent(EventType.ALARM_SET, {"alarm": alarm.to_dict()})
+                msg = event.to_json() + "\n"
+                conn.sendall(msg.encode())
+                print(f"[HOST APP] Sent ALARM_SET to node {addr}")
+            except Exception as e:
+                print(f"[HOST APP] Failed to send ALARM_SET to node {addr}: {e}")
+                return
             
             # If alarm is currently active, also send TRIGGERED event
-            if alarm_manager.is_alarm_active():
-                triggered_event = AlarmEvent(EventType.ALARM_TRIGGERED, {"alarm": alarm.to_dict()})
-                msg = triggered_event.to_json() + "\n"
-                conn.sendall(msg.encode())
-                print(f"[HOST APP] Sent alarm triggered to node {addr}")
+            try:
+                if alarm_manager.is_alarm_active():
+                    triggered_event = AlarmEvent(EventType.ALARM_TRIGGERED, {"alarm": alarm.to_dict()})
+                    msg = triggered_event.to_json() + "\n"
+                    conn.sendall(msg.encode())
+                    print(f"[HOST APP] Sent ALARM_TRIGGERED to node {addr}")
+            except Exception as e:
+                print(f"[HOST APP] Failed to send ALARM_TRIGGERED to node {addr}: {e}")
     except Exception as e:
-        print(f"[HOST APP] Failed to send alarm state to node {addr}: {e}")
+        print(f"[HOST APP] Error in on_node_connected for {addr}: {e}")
 
 
 def button_monitor():

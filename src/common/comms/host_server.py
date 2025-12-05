@@ -81,16 +81,22 @@ class AlarmHost:
                         "last_heartbeat": time.time()
                     }
                 
-                # Notify that a node connected (so we can send current alarm state)
-                if self.on_node_connected:
-                    self.on_node_connected(addr, conn)
-
+                # Start the client receive loop
                 threading.Thread(
                     target=self._client_recv_loop, 
                     args=(conn, addr),
                     daemon=True
                 ).start()
-            except:
+                
+                # Call the node connected callback in a separate thread to avoid blocking
+                if self.on_node_connected:
+                    threading.Thread(
+                        target=self.on_node_connected,
+                        args=(addr, conn),
+                        daemon=True
+                    ).start()
+            except Exception as e:
+                print(f"[HOST] Error in accept loop: {e}")
                 pass
 
     def _client_recv_loop(self, conn, addr):
