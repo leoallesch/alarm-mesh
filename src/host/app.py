@@ -213,13 +213,20 @@ def alarm_event_callback(event: AlarmEvent):
     host.broadcast(event)
     
     if event.type == EventType.ALARM_TRIGGERED:
-        # Turn on the buzzer when alarm triggers
+        # Turn on buzzer
+        if buzzer:
+            buzzer.turn_on()
+
+        # **Update LCD immediately**
         try:
-            if buzzer:
-                buzzer.turn_on()
-                print("[HOST APP] Buzzer activated")
+            if lcd:
+                alarm = Alarm.from_dict(event.data["alarm"])
+                display = TimeDisplay(current_time=datetime.now(), alarm=alarm)
+                lcd.write(display.get_time_line(), "ALARM RINGING!")
+                print("[HOST APP] LCD updated - alarm triggered")
         except Exception as e:
-            print(f"[HOST APP] Failed to activate buzzer: {e}")
+            print(f"[HOST APP] Failed to update LCD on alarm trigger: {e}")
+
     
     elif event.type == EventType.ALARM_CLEARED:
         # Turn off the buzzer and update LCD when alarm is cleared
