@@ -24,6 +24,8 @@ def handle_events():
                 packet, buffer = buffer.split("\n", 1)
                 event = AlarmEvent.from_json(packet)
                 print(f"[NODE] Received: {event.type.name}")
+
+                print(event)
                 
                 if event.type == EventType.ALARM_SET:
                     # Alarm scheduled: steady LED on
