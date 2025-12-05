@@ -16,18 +16,28 @@ def _ensure_gpio_mode():
             pass
 
 class BuzzerController:
-    """Simple buzzer controller using RPi.GPIO"""
+    """Buzzer controller using RPi.GPIO with PWM for passive buzzers"""
     
-    def __init__(self, buzzer_pin):
+    def __init__(self, buzzer_pin, frequency=1000):
+        """
+        Initialize buzzer controller.
+        
+        Args:
+            buzzer_pin: GPIO pin number for the buzzer
+            frequency: PWM frequency in Hz (default 1000 for passive buzzer)
+        """
         _ensure_gpio_mode()
         self.pin = buzzer_pin
+        self.frequency = frequency
         self.is_on = False
+        self._pwm = None
         self._beep_thread = None
         
         try:
             GPIO.setup(buzzer_pin, GPIO.OUT)
-        except Exception:
-            pass  # Pin may already be set up
+            self._pwm = GPIO.PWM(buzzer_pin, frequency)
+        except Exception as e:
+            print(f"[BUZZER] Failed to initialize PWM: {e}")
 
     def turn_on(self):
         """Turn on the buzzer with a beeping pattern"""
@@ -43,19 +53,27 @@ class BuzzerController:
         """Turn off the buzzer"""
         self.is_on = False
         try:
-            GPIO.output(self.pin, GPIO.LOW)
+            if self._pwm:
+                self._pwm.stop()
         except Exception:
             pass
 
     def _beep_pattern(self):
-        """Generate a repeating beep pattern while is_on is True"""
+        """Generate a repeating beep pattern using PWM while is_on is True"""
+        if not self._pwm:
+            return
+        
         while self.is_on:
             try:
-                # Short beep
-                GPIO.output(self.pin, GPIO.HIGH)
-                time.sleep(0.2)
-                GPIO.output(self.pin, GPIO.LOW)
-                time.sleep(0.2)
+                # Beep with 50% duty cycle
+                self._pwm.start(50)  # 50% duty cycle
+                time.sleep(0.3)  # Beep for 300ms
+                
+                if not self.is_on:
+                    break
+                
+                self._pwm.stop()
+                time.sleep(0.3)  # Silence for 300ms
             except Exception:
                 break
 
@@ -63,6 +81,8 @@ class BuzzerController:
         """Clean up GPIO resources"""
         self.turn_off()
         try:
+            if self._pwm:
+                self._pwm.stop()
             GPIO.cleanup(self.pin)
         except Exception:
             pass
