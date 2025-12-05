@@ -65,7 +65,7 @@ class BuzzerController:
         
         while self.is_on:
             try:
-                self._pwm.start(20)  # 20% duty cycle
+                self._pwm.start(10)
                 time.sleep(0.3)  # Beep for 300ms
                 
                 if not self.is_on:
