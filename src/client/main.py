@@ -31,7 +31,6 @@ def handle_events():
                     try:
                         if led:
                             led.on()
-                            print("[NODE] LED ON for alarm set")
                         else:
                             print("[NODE] LED not initialized")
                     except Exception as e:
@@ -104,7 +103,7 @@ def main():
     # Initialize LED
     try:
         led = LedController(pin=24)
-        print(f"[NODE APP] LED initialized. LED object: {led}, pin: {led.pin}")
+        print(f"[NODE APP] LED initialized")
     except Exception as e:
         print(f"[NODE APP] Failed to initialize LED: {e}")
         led = None

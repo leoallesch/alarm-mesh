@@ -161,6 +161,7 @@ def update_display():
 
 def alarm_scheduler():
     """Monitor scheduled alarm and trigger it at the right time"""
+    last_logged_time = None  # Track last time we logged the countdown
     while host and host.running:
         time.sleep(1)  # Check every second
         
@@ -169,6 +170,7 @@ def alarm_scheduler():
         
         alarm = alarm_manager.get_current_alarm()
         if not alarm:
+            last_logged_time = None
             continue  # Skip if no alarm set
         
         current_time = datetime.now()
@@ -180,10 +182,21 @@ def alarm_scheduler():
             microsecond=0
         )
         
-        # Check if we're within 1 second of the alarm time
+        # If alarm time has passed today, schedule for tomorrow
+        if alarm_time <= current_time:
+            alarm_time = alarm_time.replace(day=alarm_time.day + 1)
+        
+        time_until_alarm = (alarm_time - current_time).total_seconds()
         time_diff = (current_time - alarm_time).total_seconds()
+        
+        # Log countdown every minute or when close
+        if last_logged_time is None or (current_time - last_logged_time).total_seconds() >= 60 or time_until_alarm < 60:
+            print(f"[HOST SCHEDULER] Alarm set for {alarm} ({alarm_time.strftime('%H:%M:%S')}). Time until: {int(time_until_alarm)}s")
+            last_logged_time = current_time
+        
+        # Check if we're within 1 second of the alarm time
         if -1 < time_diff < 1:
-            print(f"[HOST SCHEDULER] Triggering alarm (time diff: {time_diff}s)")
+            print(f"[HOST SCHEDULER] TRIGGERING ALARM! (time diff: {time_diff:.2f}s)")
             alarm_manager.trigger_alarm(alarm)
 
 
