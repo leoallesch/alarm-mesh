@@ -6,7 +6,7 @@ from common.io.time_display import TimeDisplay
 from common.io.buzzer import BuzzerController
 from common.io.button import SnoozeButton
 
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import InputRequired
@@ -66,7 +66,25 @@ def index():
             msg = f"Alarm created (server not running): {alarm}"
 
         return render_template("index.html", form=form, message=msg, current_alarm=alarm)
-    return render_template("index.html", form = form)
+    
+    # On GET request, fetch the current alarm from alarm_manager
+    current_alarm = alarm_manager.get_current_alarm() if alarm_manager else None
+    return render_template("index.html", form=form, current_alarm=current_alarm)
+
+
+@app.route("/remove", methods = ["POST"])
+def remove_alarm():
+    """Remove the currently scheduled alarm"""
+    if alarm_manager:
+        alarm_manager.remove_alarm()
+        # Update LCD to clear alarm display
+        try:
+            if lcd:
+                display_now = TimeDisplay(current_time=datetime.now(), alarm=None)
+                lcd.write(display_now.get_time_line(), display_now.get_alarm_line())
+        except Exception as e:
+            print(f"[HOST APP] Failed to update LCD after removing alarm: {e}")
+    return redirect(url_for('index'))
 
 
 def handle_event(event: AlarmEvent, addr):
@@ -135,7 +153,9 @@ def alarm_scheduler():
         )
         
         # Check if we're within 1 second of the alarm time
-        if abs((current_time - alarm_time).total_seconds()) < 1:
+        time_diff = (current_time - alarm_time).total_seconds()
+        if -1 < time_diff < 1:
+            print(f"[HOST SCHEDULER] Triggering alarm (time diff: {time_diff}s)")
             alarm_manager.trigger_alarm(alarm)
 
 

@@ -3,6 +3,56 @@
 
 <head>
     <title>Flask App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        form {
+            border: 1px solid #ccc;
+            padding: 15px;
+            width: 300px;
+        }
+
+        input[type="submit"],
+        input[type="button"] {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        input[type="submit"]:hover,
+        input[type="button"]:hover {
+            background-color: #45a049;
+        }
+
+        .remove-btn {
+            background-color: #f44336;
+        }
+
+        .remove-btn:hover {
+            background-color: #da190b;
+        }
+
+        .current-alarm {
+            border: 2px solid #4CAF50;
+            padding: 15px;
+            margin: 15px 0;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+        }
+
+        .message {
+            color: #4CAF50;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 
 <body>
@@ -15,14 +65,21 @@
             {{form.time.label}}<br>
             {{ form.time()}}
         </p>
-        <p><input type="submit" value="Submit"></p>
+        <p><input type="submit" value="Set Alarm"></p>
     </form>
+
     {% if message %}
-    <p><strong>{{ message }}</strong></p>
+    <p class="message">{{ message }}</p>
     {% endif %}
 
     {% if current_alarm %}
-    <p>Current alarm: {{ current_alarm }}</p>
+    <div class="current-alarm">
+        <h3>Current Alarm</h3>
+        <p><strong>{{ current_alarm }}</strong></p>
+        <form method="post" action="/remove" style="margin-top: 10px;">
+            <input type="submit" class="remove-btn" value="Remove Alarm">
+        </form>
+    </div>
     {% endif %}
 </body>
 

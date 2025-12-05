@@ -31,6 +31,20 @@ class AlarmManager:
         except Exception as e:
             print(f"[ALARM] Failed to broadcast ALARM_SET: {e}")
 
+    def remove_alarm(self):
+        """Remove the currently scheduled alarm"""
+        with self.lock:
+            self.current_alarm = None
+            self.alarm_active = False
+            self.snooze_responses.clear()
+        print("[ALARM] Alarm removed")
+        # Optionally broadcast a clear event when alarm is removed
+        try:
+            event = AlarmEvent(EventType.ALARM_CLEARED, {"reason": "alarm removed by user"})
+            self.event_callback(event)
+        except Exception as e:
+            print(f"[ALARM] Failed to broadcast ALARM_CLEARED: {e}")
+
     def trigger_alarm(self, alarm: Alarm):
         """Trigger an alarm and broadcast to all nodes"""
         with self.lock:
