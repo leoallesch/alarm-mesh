@@ -29,11 +29,14 @@ class LedController:
         self._blink_thread = None
 
     def on(self):
+        print("attempt to turn on")
         self.stop_blink()
+        print("blink off")
         try:
             GPIO.output(self.pin, GPIO.HIGH)
         except Exception:
             pass
+        print("LED should be on")
 
     def off(self):
         self.stop_blink()
