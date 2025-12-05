@@ -31,18 +31,22 @@ def handle_events():
                     # Alarm scheduled: steady LED on
                     print("[NODE] Alarm set received")
                     try:
-                        led.on()
-                        print("[NODE] LED ON for alarm set")
-                    except Exception:
-                        pass
+                        if led:
+                            led.on()
+                            print("[NODE] LED ON for alarm set")
+                        else:
+                            print("[NODE] LED not initialized")
+                    except Exception as e:
+                        print(f"[NODE] Failed to turn on LED: {e}")
                 elif event.type == EventType.ALARM_TRIGGERED:
                     node.alarm_triggered = True
                     print("[NODE] ALARM TRIGGERED!")
                     # Start blinking LED
                     try:
-                        led.blink()
-                    except Exception:
-                        pass
+                        if led:
+                            led.blink()
+                    except Exception as e:
+                        print(f"[NODE] Failed to blink LED: {e}")
                 elif event.type == EventType.ALARM_CLEARED:
                     node.alarm_triggered = False
                     print("[NODE] Alarm cleared")
@@ -76,7 +80,7 @@ def button_monitor():
 
 
 def main():
-    global node, button
+    global node, button, led
     node = AlarmNode()
     node.start_discovery()  # Zeroconf discovery
 
@@ -102,9 +106,10 @@ def main():
     # Initialize LED
     try:
         led = LedController(pin=24)
-        print("[NODE APP] LED initialized")
+        print(f"[NODE APP] LED initialized. LED object: {led}, pin: {led.pin}")
     except Exception as e:
         print(f"[NODE APP] Failed to initialize LED: {e}")
+        led = None
 
     # Start event handler thread
     event_thread = threading.Thread(target=handle_events, daemon=True)
