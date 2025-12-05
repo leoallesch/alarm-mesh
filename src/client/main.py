@@ -29,9 +29,8 @@ def handle_events():
                     # Alarm scheduled: steady LED on
                     print("[NODE] Alarm set received")
                     try:
-                        if led:
-                            led.on()
-                            print("[NODE] LED ON for alarm set")
+                        led.on()
+                        print("[NODE] LED ON for alarm set")
                     except Exception:
                         pass
                 elif event.type == EventType.ALARM_TRIGGERED:
@@ -39,8 +38,7 @@ def handle_events():
                     print("[NODE] ALARM TRIGGERED!")
                     # Start blinking LED
                     try:
-                        if led:
-                            led.blink()
+                        led.blink()
                     except Exception:
                         pass
                 elif event.type == EventType.ALARM_CLEARED:
